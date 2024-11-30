@@ -53,6 +53,7 @@ namespace RE
 		return a_light->data.flags.any(TES_LIGHT_FLAGS::kNegative) ? -diffuse : diffuse;
 	}
 
+#ifndef SKYRIMVR
 	inline const char* GetGameVersionImpl()
 	{
 		using func_t = decltype(&GetGameVersionImpl);
@@ -72,6 +73,7 @@ namespace RE
 
 		return REL::Version(version);
 	}
+#endif
 
 	inline bool IsActor(TESObjectREFR* a_ref)
 	{
