@@ -24,6 +24,7 @@ namespace SETTINGS
 		logger::info("bDisableAllGameLights : {}", disableAllGameLights);
 		logger::info("LightBlackList : {} entries", blackListedLights.size());
 		logger::info("LightWhiteList : {} entries", whiteListedLights.size());
+		logger::info("DisabledFiles : {} entries", disabledFiles.size());
 
 		loadDebugMarkers = showDebugMarkers;
 	}
@@ -82,6 +83,13 @@ namespace SETTINGS
 		return blackListedLights.contains(fileName) || blackListedLights.contains(lastFileName) || blackListedLightsRefs.contains(a_ref->GetFormID()) || blackListedLightsRefs.contains(a_base->GetFormID());
 	}
 
+	bool Cache::GetRefFileDisabled(const RE::TESObjectREFR* a_ref) const
+	{
+		auto fileName = a_ref->GetFile(0)->fileName;
+		auto lastFileName = a_ref->GetDescriptionOwnerFile()->fileName;
+		return disabledFiles.contains(fileName) || disabledFiles.contains(lastFileName);
+	}
+
 	void Cache::ReadSettings(std::string_view a_path)
 	{
 		logger::info("Reading {}...", a_path);
@@ -109,5 +117,6 @@ namespace SETTINGS
 
 		add_to_list("LightBlackList"sv, blackListedLights);
 		add_to_list("LightWhiteList"sv, whiteListedLights);
+		add_to_list("DisabledFiles"sv, disabledFiles);
 	}
 }

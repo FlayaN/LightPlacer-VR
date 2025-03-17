@@ -1,4 +1,5 @@
 #include "Manager.h"
+#include "Settings.h"
 #include "SourceData.h"
 
 bool LightManager::ReadConfigs(bool a_reload)
@@ -113,8 +114,7 @@ void LightManager::AddLights(RE::TESObjectREFR* a_ref, RE::TESBoundObject* a_bas
 		return;
 	}
 
-	auto file = a_ref->GetDescriptionOwnerFile();
-	if (file && (strcmp(file->fileName, "DynDOLOD.esm") == 0 || strcmp(file->fileName, "DynDOLOD.esp") == 0)) {
+	if (Settings::GetSingleton()->GetRefFileDisabled(a_ref)) {
 		return;
 	}
 

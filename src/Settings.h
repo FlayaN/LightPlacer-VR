@@ -21,6 +21,7 @@ namespace SETTINGS
 
 		bool ShouldDisableLights() const;
 		bool GetGameLightDisabled(const RE::TESObjectREFR* a_ref, const RE::TESBoundObject* a_base) const;
+		bool GetRefFileDisabled(const RE::TESObjectREFR* a_ref) const;
 
 	private:
 		void ReadSettings(std::string_view a_path);
@@ -37,6 +38,7 @@ namespace SETTINGS
 	inline FlatSet<RE::FormID> blackListedLightsRefs;
 	inline StringSet           whiteListedLights;
 	inline FlatSet<RE::FormID> whiteListedLightsRefs;
+	inline StringSet           disabledFiles;
 }
 
 using Settings = SETTINGS::Cache;
