@@ -1,6 +1,7 @@
 #include "Debug.h"
 #include "Hooks.h"
 #include "Manager.h"
+#include "Papyrus.h"
 #include "Settings.h"
 
 void MessageHandler(SKSE::MessagingInterface::Message* a_message)
@@ -39,7 +40,7 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
 	v.AuthorName("powerofthree");
 	v.UsesAddressLibrary();
 	v.UsesUpdatedStructs();
-	v.CompatibleVersions({ SKSE::RUNTIME_LATEST });
+	v.CompatibleVersions({ SKSE::RUNTIME_SSE_LATEST });
 
 	return v;
 }();
@@ -60,7 +61,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 #	ifdef SKYRIMVR
 		SKSE::RUNTIME_VR_1_4_15
 #	else
-		SKSE::RUNTIME_1_5_39
+		SKSE::RUNTIME_SSE_1_5_39
 #	endif
 	) {
 		logger::critical(FMT_STRING("Unsupported runtime version {}"), ver.string());
@@ -113,6 +114,8 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
 	const auto messaging = SKSE::GetMessagingInterface();
 	messaging->RegisterListener(MessageHandler);
+
+	SKSE::GetPapyrusInterface()->Register(Papyrus::Register);
 
 	return true;
 }

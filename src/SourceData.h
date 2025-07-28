@@ -21,27 +21,27 @@ struct SourceData
 	std::string GetWornItemNodeName() const;
 
 	// members
-	SOURCE_TYPE         type{ SOURCE_TYPE::kNone };
-	std::uint32_t       miscID{ std::numeric_limits<std::uint32_t>::max() };
-	RE::TESObjectREFR*  ref{};
-	RE::TESBoundObject* base{};
-	RE::NiNode*         root{};
-	std::string_view    modelPath;
+	SOURCE_TYPE          type{ SOURCE_TYPE::kNone };
+	std::uint32_t        miscID{ std::numeric_limits<std::uint32_t>::max() };
+	RE::TESObjectREFRPtr ref{};
+	RE::TESBoundObject*  base{};
+	RE::NiNode*          root{};
+	std::string_view     modelPath;
 };
 
 struct SourceAttachData
 {
 	SourceAttachData() = default;
 
-	bool Initialize(const SourceData& a_srcData);
+	bool Initialize(const std::unique_ptr<SourceData>& a_srcData);
+	bool IsValid() const;
 
 	// members
 	SOURCE_TYPE             type{ SOURCE_TYPE::kNone };
 	std::uint32_t           effectID{ std::numeric_limits<std::uint32_t>::max() };
-	RE::TESObjectREFR*      ref{};
+	RE::TESObjectREFRPtr    ref{};
 	RE::NiNode*             root{};
 	RE::NiNode*             attachNode{};
-	RE::RefHandle           handle{};
 	float                   scale{};
 	std::string             nodeName{};
 	std::vector<RE::FormID> filterIDs{};

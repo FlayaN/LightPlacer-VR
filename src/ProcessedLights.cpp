@@ -2,15 +2,10 @@
 
 #include "SourceData.h"
 
-bool ProcessedLights::IsNewLight(RE::NiPointLight* a_niLight)
+bool ProcessedLights::emplace_back(const LIGH::LightSourceData& a_lightSrcData, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref, float a_scale)
 {
-	return std::find(lights.begin(), lights.end(), a_niLight) == lights.end();
-}
-
-bool ProcessedLights::emplace_back(const LightSourceData& a_lightSrcData, RE::NiPointLight* a_niLight, RE::BSLight* a_bsLight, RE::NiAVObject* a_debugMarker, RE::TESObjectREFR* a_ref, float a_scale)
-{
-	if (IsNewLight(a_niLight)) {
-		lights.emplace_back(a_lightSrcData, a_bsLight, a_niLight, a_debugMarker, a_ref, a_scale);
+	if (std::find(lights.begin(), lights.end(), a_lightOutput) == lights.end()) {
+		lights.emplace_back(a_lightSrcData, a_lightOutput, a_ref, a_scale);
 		return true;
 	}
 	return false;
@@ -25,11 +20,33 @@ void ProcessedLights::ShowDebugMarkers(bool a_show) const
 {
 	for (auto& light : lights) {
 		if (a_show) {
-			light.ShowDebugMarker();
+			light.output.ShowDebugMarker();
 		} else {
-			light.HideDebugMarker();
+			light.output.HideDebugMarker();
 		}
 	}
+}
+
+void ProcessedLights::ToggleLightsScript(bool a_toggle)
+{
+	for (auto& light : lights) {
+		if (auto& niLight = light.GetLight()) {
+			auto& debugMarker = light.output.debugMarker;
+			LightData::CullLight(niLight.get(), debugMarker.get(), a_toggle, LIGHT_CULL_FLAGS::Script);
+		}
+	}
+}
+
+bool ProcessedLights::GetLightsToggledScript()
+{
+	for (auto& light : lights) {
+		if (auto& niLight = light.GetLight()) {
+			if (niLight->GetAppCulled()) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 void ProcessedLights::ReattachLights(RE::TESObjectREFR* a_ref)
@@ -42,14 +59,14 @@ void ProcessedLights::ReattachLights(RE::TESObjectREFR* a_ref)
 void ProcessedLights::ReattachLights() const
 {
 	for (auto& light : lights) {
-		light.ReattachLight();
+		light.output.ReattachLight();
 	}
 }
 
 void ProcessedLights::RemoveLights(bool a_clearData) const
 {
 	for (auto& light : lights) {
-		light.RemoveLight(a_clearData);
+		light.output.RemoveLight(a_clearData);
 	}
 }
 
@@ -87,13 +104,15 @@ void ProcessedLights::UpdateLightsAndRef(const UpdateParams& a_params)
 	const float scale = withinFlickerDistance ? a_params.ref->GetScale() : 1.0f;
 
 	for (auto& lightData : lights) {
-		if (!lightData.GetLight() || lightData.DimLight(a_params.dimFactor)) {
+		auto& niLight = lightData.output.GetLight();
+
+		if (!niLight || lightData.output.DimLight(a_params.dimFactor)) {
 			continue;
 		}
 
 		lightData.UpdateConditions(a_params.ref, nodeVisHelper, conditionUpdateFlags);
 
-		if (!lightData.GetLight()->GetAppCulled() && withinFlickerDistance) {
+		if (!niLight->GetAppCulled() && withinFlickerDistance) {
 			lightData.UpdateAnimation(a_params.delta, scale);
 			lightData.UpdateVanillaFlickering();
 		}
