@@ -72,8 +72,6 @@ struct LightOutput
 	void ShowDebugMarker() const;
 	void HideDebugMarker() const;
 	void UpdateDebugMarkerState(bool a_culled) const;
-	void UpdateEmittance() const;
-	void UpdateVanillaFlickering() const;
 
 	RE::NiPointer<RE::BSLight>      bsLight{};
 	RE::NiPointer<RE::NiPointLight> niLight{};
@@ -93,6 +91,8 @@ struct LightData
 	LIGHT_FLAGS                              GetLightFlags() const;
 	bool                                     GetInverseSquare() const;
 	float                                    GetCutoff() const;
+	float                                    GetSize() const;
+	float                                    GetScaledSize(float a_scale) const;
 	float                                    GetFalloff() const;
 	float                                    GetNearDistance() const;
 	static std::string                       GetLightName(const std::unique_ptr<SourceAttachData>& a_srcData, std::string_view a_lightEDID, std::uint32_t a_index);
@@ -116,6 +116,7 @@ struct LightData
 	float                                    fade{ 0.0f };
 	float                                    fov{ 0.0f };
 	float                                    cutoff{ 0.0f };
+	float                                    size{ 0.0f };
 	float                                    shadowDepthBias{ 1.0f };
 	RE::NiPoint3                             offset;
 	RE::NiMatrix3                            rotation;
@@ -219,7 +220,7 @@ struct glz::meta<LIGH::LightSourceData>
 			}
 		}
 	};
-	static constexpr auto write_flags = [](auto& s) -> auto& { return ""; };
+	static constexpr auto write_flags = [](auto&) -> auto& { return ""; };
 
 	static constexpr auto read_aioController = [](auto& s) -> bool {
 		if (!s.aioController.empty()) {
@@ -264,6 +265,7 @@ struct glz::meta<LIGH::LightSourceData>
 		"fade", [](auto&& self) -> auto& { return self.data.fade; },
 		"fov", [](auto&& self) -> auto& { return self.data.fov; },
 		"cutoff", [](auto&& self) -> auto& { return self.data.cutoff; },
+		"size", [](auto&& self) -> auto& { return self.data.size; },
 		"shadowDepthBias", [](auto&& self) -> auto& { return self.data.shadowDepthBias; },
 		"offset", [](auto&& self) -> auto& { return self.data.offset; },
 		"rotation", [](auto&& self) -> auto& { return self.data.rotation; },
@@ -328,7 +330,6 @@ struct REFR_LIGH
 	void ReattachLight(RE::TESObjectREFR* a_ref);
 	bool ShouldUpdateConditions(ConditionUpdateFlags a_flags) const;
 	void UpdateAnimation(float a_delta, float a_scalingFactor);
-	void UpdateDebugMarkerState(bool a_culled) const;
 	void UpdateConditions(RE::TESObjectREFR* a_ref, NodeVisHelper& a_nodeVisHelper, ConditionUpdateFlags a_flags);
 	void UpdateEmittance() const;
 	void UpdateVanillaFlickering() const;
