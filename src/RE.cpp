@@ -102,6 +102,39 @@ namespace RE
 		return nullptr;
 	}
 
+	NiNode* GetCastingArtNode(ActorMagicCaster* a_actorMagicCaster)
+	{
+		if (auto actor = a_actorMagicCaster->GetCasterAsActor(); actor && actor->IsPlayerRef()) {
+			if (actor->Is3rdPersonVisible()) {
+				return a_actorMagicCaster->castingArtData.attachedArt.get();  // GetMagicNode doesn't properly detach on first attach
+			} else if (auto node = a_actorMagicCaster->GetMagicNode()) {
+				if (auto castingNode = RE::GetObjectByName(actor->Get3D(false), node->name)) {
+					return castingNode->AsNode();
+				}
+			}
+		}
+		return a_actorMagicCaster->GetMagicNode();
+	}
+
+	NiAVObject* GetObjectByName(RE::NiAVObject* a_root, std::string_view a_name)
+	{
+		if (!a_root) {
+			return nullptr;
+		}
+
+		NiAVObject* object = nullptr;
+
+		RE::BSVisit::TraverseScenegraphObjects(a_root, [a_root, a_name, &object](RE::NiAVObject* a_object) -> RE::BSVisit::BSVisitControl {
+			if (a_object->name == a_name) {
+				object = a_object;
+				return RE::BSVisit::BSVisitControl::kStop;
+			}
+			return RE::BSVisit::BSVisitControl::kContinue;
+		});
+
+		return object;
+	}
+
 	bool IsDynDOLODForm(const TESObjectREFR* a_ref)
 	{
 		auto file = a_ref->GetDescriptionOwnerFile();

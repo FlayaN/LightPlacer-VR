@@ -5,6 +5,7 @@
 struct ProcessedLights
 {
 	ProcessedLights() = default;
+	ProcessedLights(const LIGH::LightSourceData& a_lightSrcData, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref, float a_scale);
 
 	struct UpdateParams
 	{
@@ -15,12 +16,14 @@ struct ProcessedLights
 		float              dimFactor{ RE::NI_INFINITY };
 	};
 
+	std::size_t size() const { return lights.size(); }
+
 	bool emplace_back(const LIGH::LightSourceData& a_lightSrcData, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref, float a_scale);
 	void emplace_back(const REFR_LIGH& a_lightREFRData);
 
 	void ShowDebugMarkers(bool a_show) const;
 
-	void ToggleLightsScript(bool a_toggle);
+	void ToggleLightsScript(bool a_toggle) const;
 	bool GetLightsToggledScript() const;
 
 	void ReattachLights(RE::TESObjectREFR* a_ref);
@@ -35,13 +38,15 @@ struct ProcessedLights
 	// members
 	float                    lastUpdateTime{ 0.0f };
 	std::vector<REFR_LIGH>   lights;
-	REFR_LIGH::NodeVisHelper nodeVisHelper;
+	REFR_LIGH::NodeVisHelper nodeVisHelper{};
 	bool                     firstLoad{ true };
 };
 
 struct LightsToUpdate
 {
 	LightsToUpdate() = default;
+	LightsToUpdate(RE::RefHandle a_handle);
+	LightsToUpdate(const ProcessedLights& a_processedLights, RE::RefHandle a_handle, bool a_isObject);
 
 	void emplace(const ProcessedLights& a_processedLights, RE::RefHandle a_handle, bool a_isObject);
 	void emplace(RE::RefHandle a_handle);

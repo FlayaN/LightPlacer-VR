@@ -75,7 +75,8 @@ namespace Hooks::Detach
 	{
 		static bool thunk(RE::RefAttachTechniqueInput& a_this)
 		{
-			LightManager::GetSingleton()->DetachCastingLights(a_this);
+			auto actorMagicCaster = stl::adjust_pointer<RE::ActorMagicCaster>(&a_this, -static_cast<std::ptrdiff_t>(offsetof(RE::ActorMagicCaster, RE::ActorMagicCaster::castingArtData)));
+			LightManager::GetSingleton()->DetachCastingLights(actorMagicCaster);
 
 			return func(a_this);
 		}
@@ -94,6 +95,42 @@ namespace Hooks::Detach
 				REL::Relocation<std::uintptr_t> target{ address, offset };
 				stl::write_thunk_call<BGSAttachTechniques__DetachItem>(target.address());
 			}
+		}
+	};
+
+	struct Hazard__Release3DRelatedData
+	{
+		static void thunk(RE::Hazard* a_this)
+		{
+			LightManager::GetSingleton()->DetachHazardLights(a_this);
+
+			func(a_this);
+		}
+		static inline REL::Relocation<decltype(thunk)> func;
+		static constexpr std::size_t                   idx{ 0x6B };
+
+		static void Install()
+		{
+			stl::write_vfunc<RE::Hazard, Hazard__Release3DRelatedData>();
+			logger::info("Hooked Hazard::Release3DRelatedData");
+		}
+	};
+
+	struct Explosion__Release3DRelatedData
+	{
+		static void thunk(RE::Explosion* a_this)
+		{
+			LightManager::GetSingleton()->DetachExplosionLights(a_this);
+
+			func(a_this);
+		}
+		static inline REL::Relocation<decltype(thunk)> func;
+		static constexpr std::size_t                   idx{ 0x6B };
+
+		static void Install()
+		{
+			stl::write_vfunc<RE::Explosion, Explosion__Release3DRelatedData>();
+			logger::info("Hooked Explosion::Release3DRelatedData");
 		}
 	};
 
@@ -123,6 +160,8 @@ namespace Hooks::Detach
 		GetLightData::Install();
 		RunBiped3DDetach::Install();
 		BGSAttachTechniques__DetachItem::Install();
+		Hazard__Release3DRelatedData::Install();
+		Explosion__Release3DRelatedData::Install();
 		BSTempEffect::DetachImpl<RE::ShaderReferenceEffect>::Install();
 		BSTempEffect::DetachImpl<RE::ModelReferenceEffect>::Install();
 		Suspend::Install();
