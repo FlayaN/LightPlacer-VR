@@ -11,6 +11,7 @@
 #include <ClibUtil/RNG.hpp>
 #include <ClibUtil/distribution.hpp>
 #include <ClibUtil/simpleINI.hpp>
+#include <ClibUtil/timer.hpp>
 #include <MergeMapperPluginAPI.h>
 //#include <boost_unordered.hpp>
 #include <boost/unordered/concurrent_flat_map.hpp>
@@ -73,7 +74,7 @@ namespace stl
 					db(*reinterpret_cast<std::uint8_t*>(a_originalFuncAddr + i));
 				}
 
-				jmp(qword[rip]);
+				jmp(ptr[rip]);
 				dq(a_originalFuncAddr + a_originalByteLength);
 			}
 		};
@@ -91,11 +92,13 @@ namespace stl
 	}
 
 	template <class T, class F>
-	void unique_insert(std::vector<T>& vec, const F& element)
+	bool unique_insert(std::vector<T>& vec, const F& element)
 	{
 		if (std::find(vec.begin(), vec.end(), element) == vec.end()) {
 			vec.push_back(element);
+			return true;
 		}
+		return false;
 	}
 
 	template <class T, class F>

@@ -5,7 +5,7 @@
 struct ProcessedLights
 {
 	ProcessedLights() = default;
-	ProcessedLights(const LIGH::LightSourceData& a_lightSrcData, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref, float a_scale);
+	ProcessedLights(const LIGH::LightSourceData& a_lightSrcData, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref);
 
 	struct UpdateParams
 	{
@@ -18,13 +18,13 @@ struct ProcessedLights
 
 	std::size_t size() const { return lights.size(); }
 
-	bool emplace_back(const LIGH::LightSourceData& a_lightSrcData, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref, float a_scale);
+	bool emplace_back(const LIGH::LightSourceData& a_lightSrcData, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref);
 	void emplace_back(const REFR_LIGH& a_lightREFRData);
 
 	void ShowDebugMarkers(bool a_show) const;
 
-	void ToggleLightsScript(bool a_toggle) const;
-	bool GetLightsToggledScript() const;
+	void ToggleLights(bool a_toggle, LIGHT_CULL_FLAGS a_flags) const;
+	bool GetLightsToggled(LIGHT_CULL_FLAGS a_flags) const;
 
 	void ReattachLights(RE::TESObjectREFR* a_ref);
 	void ReattachLights() const;
@@ -33,22 +33,21 @@ struct ProcessedLights
 	bool UpdateTimer(float a_delta, float a_interval);
 	void UpdateConditions(RE::TESObjectREFR* a_ref, std::string_view a_nodeName, ConditionUpdateFlags a_flags);
 	void UpdateLightsAndRef(const UpdateParams& a_params);
-	void UpdateEmittance() const;
+	void UpdateEmittance(RE::TESObjectCELL* a_cell) const;
 
 	// members
-	float                    lastUpdateTime{ 0.0f };
+	float                    lastUpdateTime{ std::numeric_limits<float>::max() };
 	std::vector<REFR_LIGH>   lights;
 	REFR_LIGH::NodeVisHelper nodeVisHelper{};
-	bool                     firstLoad{ true };
 };
 
 struct LightsToUpdate
 {
 	LightsToUpdate() = default;
 	LightsToUpdate(RE::RefHandle a_handle);
-	LightsToUpdate(const ProcessedLights& a_processedLights, RE::RefHandle a_handle, bool a_isObject);
+	LightsToUpdate(const LightData& a_lightData, RE::RefHandle a_handle);
 
-	void emplace(const ProcessedLights& a_processedLights, RE::RefHandle a_handle, bool a_isObject);
+	void emplace(const LightData& a_lightData, RE::RefHandle a_handle);
 	void emplace(RE::RefHandle a_handle);
 
 	void erase(RE::RefHandle a_handle);

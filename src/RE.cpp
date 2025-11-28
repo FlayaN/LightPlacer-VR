@@ -46,6 +46,33 @@ namespace RE
 	}
 #endif
 
+	bool ShouldAttachLight(TESBoundObject* a_obj)
+	{
+		switch (a_obj->GetFormType()) {
+		case RE::FormType::MovableStatic:
+		case RE::FormType::Projectile:
+		case RE::FormType::Explosion:
+		case RE::FormType::Hazard:
+		case RE::FormType::Furniture:
+		case RE::FormType::Door:
+		case RE::FormType::Misc:
+		case RE::FormType::Static:
+		case RE::FormType::Container:
+		case RE::FormType::SoulGem:
+		case RE::FormType::Activator:
+		case RE::FormType::Book:
+		case RE::FormType::Weapon:
+		case RE::FormType::Armor:
+		case RE::FormType::AlchemyItem:
+		case RE::FormType::Ingredient:
+		case RE::FormType::Flora:
+		case RE::FormType::Tree:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 	NiAVObject* GetReferenceAttachRoot(ReferenceEffect* a_referenceEffect)
 	{
 		if (const auto weapController = skyrim_cast<WeaponEnchantmentController*>(a_referenceEffect->controller)) {
@@ -1189,6 +1216,13 @@ namespace RE
 		return NiCosQImpl((512.0f / NI_TWO_PI) * a_radians);
 	}
 
+	NiMatrix3 ToMatrix(const NiPoint3& a_point)
+	{
+		NiMatrix3 input;
+		input.SetEulerAnglesXYZ(RE::deg_to_rad(a_point.x), RE::deg_to_rad(a_point.y), RE::deg_to_rad(a_point.z));
+		return input;
+	}
+
 	bool ToggleMasterParticleAddonNodes(const NiNode* a_node, bool a_enable)
 	{
 		using func_t = decltype(&ToggleMasterParticleAddonNodes);
@@ -1201,6 +1235,34 @@ namespace RE
 		using func_t = decltype(&UpdateLight);
 		static REL::Relocation<func_t> func{ RELOCATION_ID(17212, 17614) };
 		func(a_light, a_ptLight, a_ref, a_wantDimmer);
+	}
+
+	void UpdateRegionEmittance(RE::NiColor& a_color, RE::TESRegion* a_region)
+	{
+		using namespace literals;
+
+		auto weather = a_region->currentWeather;
+		if (!weather) {
+			weather = a_region->SelectWeather();
+			if (weather) {
+				a_region->SetCurrentWeather(weather);
+			}
+		}
+		if (!weather) {
+			if (auto defaultWeather = TESForm::LookupByID<TESWeather>(0x15E)) {
+				weather = defaultWeather;
+			}
+		}
+		if (weather) {
+			Sky::COLOR_BLEND      colorBlend{};
+			TESWeather::ColorTime time1{};
+			TESWeather::ColorTime time2{};
+
+			auto sky = Sky::GetSingleton();
+			sky->FillColorBlend(colorBlend, weather, 1.0f, time1, time2);
+			sky->FillColorBlendColors(colorBlend, weather, nullptr, TESWeather::ColorType::kEffectLighting, time1, time2);
+			sky->SetColor(a_color, &colorBlend, sky->flash * "fWeatherFlashDirectional"_gs.value_or(1.0f));
+		}
 	}
 
 	void WrapRotation(NiPoint3& a_rotation)

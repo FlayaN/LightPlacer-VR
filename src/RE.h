@@ -54,6 +54,17 @@ namespace RE
 
 	using NiNodePtr = NiPointer<NiNode>;
 
+	template <class T>
+	void UpdateNode(T* a_obj)
+	{
+		if (TaskQueueInterface::ShouldUseTaskQueue()) {
+			TaskQueueInterface::GetSingleton()->QueueUpdateNiObject(a_obj);
+		} else {
+			NiUpdateData updateData;
+			a_obj->Update(updateData);
+		}
+	}
+
 	template <class T, class U>
 	void AttachNode(const U a_root, T* a_obj)
 	{
@@ -64,19 +75,10 @@ namespace RE
 				TaskQueueInterface::GetSingleton()->QueueNodeAttach(a_obj, a_root);
 			}
 		} else {
-			a_root->AttachChild(a_obj, true);
+			a_root->AttachChild(a_obj, false);
 		}
-	}
 
-	template <class T>
-	void UpdateNode(T* a_obj)
-	{
-		if (TaskQueueInterface::ShouldUseTaskQueue()) {
-			TaskQueueInterface::GetSingleton()->QueueUpdateNiObject(a_obj);
-		} else {
-			NiUpdateData updateData;
-			a_obj->Update(updateData);
-		}
+		UpdateNode(a_obj);
 	}
 
 	FormID GetFormID(const std::string& a_str);
@@ -92,6 +94,7 @@ namespace RE
 	REL::Version GetGameVersion();
 #endif
 
+	bool            ShouldAttachLight(TESBoundObject* a_obj);
 	NiAVObject*     GetReferenceAttachRoot(ReferenceEffect* a_referenceEffect);
 	TESBoundObject* GetReferenceEffectBase(const TESObjectREFRPtr& a_ref, const ReferenceEffect* a_referenceEffect);
 	BGSArtObject*   GetCastingArt(const MagicItem* a_magicItem);
@@ -103,7 +106,9 @@ namespace RE
 	float           NiCosQImpl(float a_value);
 	float           NiSinQ(float a_radians);
 	float           NiCosQ(float a_radians);
+	NiMatrix3       ToMatrix(const NiPoint3& a_point);
 	bool            ToggleMasterParticleAddonNodes(const NiNode* a_node, bool a_enable);
 	void            UpdateLight(TESObjectLIGH* a_light, const NiPointer<NiPointLight>& a_ptLight, TESObjectREFR* a_ref, float a_wantDimmer);
+	void            UpdateRegionEmittance(RE::NiColor& a_color, RE::TESRegion* a_region);
 	void            WrapRotation(NiPoint3& a_rotation);
 }

@@ -10,9 +10,9 @@ namespace Config
 	{
 		void PostProcess();
 
-		bool IsInvalid(const std::unique_ptr<SourceAttachData>& a_srcData) const;
-		bool IsBlacklisted(const std::unique_ptr<SourceAttachData>& a_srcData) const;
-		bool IsWhitelisted(const std::unique_ptr<SourceAttachData>& a_srcData) const;
+		bool IsInvalid(const SourceAttachDataPtr& a_srcData) const;
+		bool IsBlacklisted(const SourceAttachDataPtr& a_srcData) const;
+		bool IsWhitelisted(const SourceAttachDataPtr& a_srcData) const;
 
 		// members
 		StringSet           whiteList;
@@ -21,17 +21,16 @@ namespace Config
 		FlatSet<RE::FormID> blackListForms;
 	};
 
-	struct PointData
+	template <class T>
+	struct Data
 	{
-		std::vector<RE::NiPoint3> points;
-		LIGH::LightSourceData     data;
+		T                     attacher;
+		LIGH::LightSourceData data;
+		std::string           path;
 	};
 
-	struct NodeData
-	{
-		StringSet             nodes;
-		LIGH::LightSourceData data;
-	};
+	using PointData = Data<std::vector<RE::NiPoint3>>;
+	using NodeData = Data<StringSet>;
 
 	template <class T>
 	struct FilteredData
@@ -60,9 +59,9 @@ namespace Config
 		LightSourceVec lights;
 	};
 
-	struct MultiVisualEffectSet
+	struct MultiFormIDSet
 	{
-		StringSet      visualEffects;
+		StringSet      formIDs;
 		LightSourceVec lights;
 	};
 
@@ -73,9 +72,9 @@ namespace Config
 		std::vector<FilteredRawData> lights;
 	};
 
-	using Format = std::variant<MultiModelSet, MultiVisualEffectSet, MultiAddonSet>;
+	using Format = std::variant<MultiModelSet, MultiFormIDSet, MultiAddonSet>;
 
-	void PostProcess(LightSourceVec& a_lightDataVec);
+	void PostProcess(LightSourceVec& a_lightDataVec, const std::string& path);
 	void PostProcess(AddonLightSourceVec& a_lightDataVec);
 }
 
@@ -96,7 +95,7 @@ struct glz::meta<Config::FilteredPointData>
 	static constexpr auto value = object(
 		"whiteList", [](auto&& self) -> auto& { return self.filter.whiteList; },
 		"blackList", [](auto&& self) -> auto& { return self.filter.blackList; },
-		"points", [](auto&& self) -> auto& { return self.data.points; },
+		"points", [](auto&& self) -> auto& { return self.data.attacher; },
 		"data", [](auto&& self) -> auto& { return self.data.data; });
 };
 
@@ -107,7 +106,7 @@ struct glz::meta<Config::FilteredNodeData>
 	static constexpr auto value = object(
 		"whiteList", [](auto&& self) -> auto& { return self.filter.whiteList; },
 		"blackList", [](auto&& self) -> auto& { return self.filter.blackList; },
-		"nodes", [](auto&& self) -> auto& { return self.data.nodes; },
+		"nodes", [](auto&& self) -> auto& { return self.data.attacher; },
 		"data", [](auto&& self) -> auto& { return self.data.data; });
 };
 
@@ -121,11 +120,12 @@ struct glz::meta<Config::MultiModelSet>
 };
 
 template <>
-struct glz::meta<Config::MultiVisualEffectSet>
+struct glz::meta<Config::MultiFormIDSet>
 {
-	using T = Config::MultiVisualEffectSet;
-	static constexpr auto value = object(
-		"visualEffects", &T::visualEffects,
+	using T = Config::MultiFormIDSet;
+	static constexpr auto modify = glz::object(
+		"formIDs", &T::formIDs,
+		"visualEffects", &T::formIDs,
 		"lights", &T::lights);
 };
 

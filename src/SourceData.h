@@ -6,7 +6,7 @@ enum class SOURCE_TYPE
 	kRef,
 	kActorWorn,
 	kActorMagic,
-	kTempEffect
+	kReferenceEffect
 };
 
 struct SourceData
@@ -29,12 +29,13 @@ struct SourceData
 	std::string_view     modelPath;
 };
 
+using SourceDataPtr = SourceData;
+
 struct SourceAttachData
 {
 	SourceAttachData() = default;
 
-	bool Initialize(const std::unique_ptr<SourceData>& a_srcData);
-	bool IsValid() const;
+	bool Initialize(const SourceDataPtr& a_srcData);
 
 	// members
 	SOURCE_TYPE             type{ SOURCE_TYPE::kNone };
@@ -46,3 +47,5 @@ struct SourceAttachData
 	std::string             nodeName{};
 	std::vector<RE::FormID> filterIDs{};
 };
+
+using SourceAttachDataPtr = SourceAttachData;

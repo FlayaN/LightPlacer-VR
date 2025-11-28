@@ -1,14 +1,14 @@
 #include "ProcessedLights.h"
 
-ProcessedLights::ProcessedLights(const LIGH::LightSourceData& a_lightSrcData, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref, float a_scale)
+ProcessedLights::ProcessedLights(const LIGH::LightSourceData& a_lightSrcData, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref)
 {
-	lights.emplace_back(a_lightSrcData, a_lightOutput, a_ref, a_scale);
+	lights.emplace_back(a_lightSrcData, a_lightOutput, a_ref);
 }
 
-bool ProcessedLights::emplace_back(const LIGH::LightSourceData& a_lightSrcData, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref, float a_scale)
+bool ProcessedLights::emplace_back(const LIGH::LightSourceData& a_lightSrcData, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref)
 {
 	if (std::find(lights.begin(), lights.end(), a_lightOutput) == lights.end()) {
-		lights.emplace_back(a_lightSrcData, a_lightOutput, a_ref, a_scale);
+		lights.emplace_back(a_lightSrcData, a_lightOutput, a_ref);
 		return true;
 	}
 	return false;
@@ -30,21 +30,21 @@ void ProcessedLights::ShowDebugMarkers(bool a_show) const
 	}
 }
 
-void ProcessedLights::ToggleLightsScript(bool a_toggle) const
+void ProcessedLights::ToggleLights(bool a_toggle, LIGHT_CULL_FLAGS a_flags) const
 {
 	for (auto& light : lights) {
 		if (auto& niLight = light.GetLight()) {
 			auto& debugMarker = light.output.debugMarker;
-			LightData::CullLight(niLight.get(), debugMarker.get(), a_toggle, LIGHT_CULL_FLAGS::Script);
+			LightData::CullLight(niLight.get(), debugMarker.get(), a_toggle, a_flags);
 		}
 	}
 }
 
-bool ProcessedLights::GetLightsToggledScript() const
+bool ProcessedLights::GetLightsToggled(LIGHT_CULL_FLAGS a_flags) const
 {
 	for (auto& light : lights) {
 		if (auto& niLight = light.GetLight()) {
-			if (niLight->GetAppCulled()) {
+			if (niLight->GetAppCulled() && ((uint32_t)LightData::GetCulledFlag(niLight.get()) & (uint32_t)a_flags) != 0) {
 				return true;
 			}
 		}
@@ -97,7 +97,8 @@ void ProcessedLights::UpdateConditions(RE::TESObjectREFR* a_ref, std::string_vie
 void ProcessedLights::UpdateLightsAndRef(const UpdateParams& a_params)
 {
 	auto conditionUpdateFlags = ConditionUpdateFlags::Skip;
-	if (firstLoad) {
+	if (lastUpdateTime == std::numeric_limits<float>::max()) {
+		lastUpdateTime = 0.0f;
 		conditionUpdateFlags = ConditionUpdateFlags::Forced;
 	} else if (UpdateTimer(a_params.delta, 1.0f)) {
 		conditionUpdateFlags = ConditionUpdateFlags::Normal;
@@ -122,14 +123,12 @@ void ProcessedLights::UpdateLightsAndRef(const UpdateParams& a_params)
 	}
 
 	nodeVisHelper.UpdateNodeVisibility(a_params.ref, a_params.nodeName);
-
-	firstLoad = false;
 }
 
-void ProcessedLights::UpdateEmittance() const
+void ProcessedLights::UpdateEmittance(RE::TESObjectCELL* a_cell) const
 {
 	for (auto& light : lights) {
-		light.UpdateEmittance();
+		light.UpdateEmittance(a_cell);
 	}
 }
 
@@ -138,20 +137,16 @@ LightsToUpdate::LightsToUpdate(RE::RefHandle a_handle)
 	emplace(a_handle);
 }
 
-LightsToUpdate::LightsToUpdate(const ProcessedLights& a_processedLights, RE::RefHandle a_handle, bool a_isObject)
+LightsToUpdate::LightsToUpdate(const LightData& a_lightData, RE::RefHandle a_handle)
 {
-	emplace(a_processedLights, a_handle, a_isObject);
+	emplace(a_lightData, a_handle);
 }
 
-void LightsToUpdate::emplace(const ProcessedLights& a_processedLights, RE::RefHandle a_handle, bool a_isObject)
+void LightsToUpdate::emplace(const LightData& a_lightData, RE::RefHandle a_handle)
 {
 	stl::unique_insert(updatingLights, a_handle);
-
-	for (auto& lightData : a_processedLights.lights) {
-		if (a_isObject && lightData.data.emittanceForm) {
-			stl::unique_insert(emittanceLights, a_handle);
-			break;
-		}
+	if (a_lightData.emittanceForm) {
+		stl::unique_insert(emittanceLights, a_handle);
 	}
 }
 

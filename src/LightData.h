@@ -1,8 +1,7 @@
 #pragma once
 
 #include "LightControllers.h"
-
-struct SourceAttachData;
+#include "SourceData.h"
 
 enum class LIGHT_FLAGS
 {
@@ -34,7 +33,7 @@ enum class LIGHT_CULL_FLAGS
 	None = 0,
 	Conditions = (1 << 0),
 	Game = (1 << 1),
-	Script = (1 << 2),
+	Script = (1 << 2)
 };
 
 enum class TES_LIGHT_FLAGS_EXT
@@ -61,6 +60,9 @@ struct LightOutput
 
 	bool operator==(const LightOutput& rhs) const
 	{
+		if (!niLight || !rhs.niLight) {
+			return false;
+		}
 		return niLight->name == rhs.niLight->name;
 	}
 
@@ -71,8 +73,8 @@ struct LightOutput
 	void RemoveLight(bool a_clearData) const;
 	void ShowDebugMarker() const;
 	void HideDebugMarker() const;
-	void UpdateDebugMarkerState(bool a_culled) const;
 
+	// members
 	RE::NiPointer<RE::BSLight>      bsLight{};
 	RE::NiPointer<RE::NiPointLight> niLight{};
 	RE::NiPointer<RE::NiAVObject>   debugMarker{};
@@ -95,9 +97,8 @@ struct LightData
 	float                                    GetScaledSize(float a_scale) const;
 	float                                    GetFalloff() const;
 	float                                    GetNearDistance() const;
-	static std::string                       GetLightName(const std::unique_ptr<SourceAttachData>& a_srcData, std::string_view a_lightEDID, std::uint32_t a_index);
-	static std::string                       GetNodeName(const RE::NiPoint3& a_point, std::uint32_t a_index);
-	static std::string                       GetNodeName(RE::NiAVObject* a_obj, std::uint32_t a_index);
+	std::string                              GetNodeName(const RE::NiPoint3& a_point, const std::string& path, std::uint32_t a_index) const;
+	std::string                              GetNodeName(RE::NiAVObject* a_obj, const std::string& path, std::uint32_t a_index) const;
 	RE::ShadowSceneNode::LIGHT_CREATE_PARAMS GetParams(const RE::TESObjectREFR* a_ref) const;
 	bool                                     GetPortalStrict() const;
 	bool                                     IsDynamicLight(const RE::TESObjectREFR* a_ref) const;
@@ -119,11 +120,11 @@ struct LightData
 	float                                    size{ 0.0f };
 	float                                    shadowDepthBias{ 1.0f };
 	RE::NiPoint3                             offset;
-	RE::NiMatrix3                            rotation;
+	RE::NiPoint3                             rotation;
 	REX::EnumSet<LIGHT_FLAGS, std::uint32_t> flags{ LIGHT_FLAGS::None };
 	RE::TESForm*                             emittanceForm{ nullptr };
 	std::shared_ptr<RE::TESCondition>        conditions;
-	StringSet                                conditionalNodes;
+	std::vector<std::string>                 conditionalNodes;
 
 	constexpr static auto LP_LIGHT = "LP_Light"sv;
 	constexpr static auto LP_NODE = "LP_Node"sv;
@@ -155,9 +156,11 @@ namespace LIGH
 
 		bool IsStaticLight() const;
 
-		RE::NiNode* GetOrCreateNode(RE::NiNode* a_root, const RE::NiPoint3& a_point, std::uint32_t a_index) const;
-		RE::NiNode* GetOrCreateNode(RE::NiNode* a_root, const std::string& a_nodeName, std::uint32_t a_index) const;
-		RE::NiNode* GetOrCreateNode(RE::NiNode* a_root, RE::NiAVObject* a_obj, std::uint32_t a_index) const;
+		RE::NiNode* GetOrCreateNode(RE::NiNode* a_root, const RE::NiPoint3& a_point, const std::string& path, std::uint32_t a_index) const;
+		RE::NiNode* GetOrCreateNode(RE::NiNode* a_root, const std::string& a_nodeName, const std::string& path, std::uint32_t a_index) const;
+		RE::NiNode* GetOrCreateNode(RE::NiNode* a_root, RE::NiAVObject* a_obj, const std::string& path, std::uint32_t a_index) const;
+
+		std::string GetLightName(const SourceAttachDataPtr& a_srcData, const std::string& path, std::uint32_t a_index) const;
 
 		// members
 		LightData                data;
@@ -301,7 +304,7 @@ struct REFR_LIGH
 	// cull nodes based on condition state
 	struct NodeVisHelper
 	{
-		void InsertConditionalNodes(const StringSet& a_nodes, bool a_isVisble);
+		void InsertConditionalNodes(const std::vector<std::string>& a_nodes, bool a_isVisble);
 		void UpdateNodeVisibility(const RE::TESObjectREFR* a_ref, std::string_view a_nodeName);
 		void Reset();
 
@@ -313,7 +316,7 @@ struct REFR_LIGH
 	};
 
 	REFR_LIGH() = default;
-	REFR_LIGH(const LIGH::LightSourceData& a_lightSource, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref, float a_scale);
+	REFR_LIGH(const LIGH::LightSourceData& a_lightSource, const LightOutput& a_lightOutput, const RE::TESObjectREFRPtr& a_ref);
 
 	bool operator==(const REFR_LIGH& rhs) const
 	{
@@ -331,13 +334,12 @@ struct REFR_LIGH
 	bool ShouldUpdateConditions(ConditionUpdateFlags a_flags) const;
 	void UpdateAnimation(float a_delta, float a_scalingFactor);
 	void UpdateConditions(RE::TESObjectREFR* a_ref, NodeVisHelper& a_nodeVisHelper, ConditionUpdateFlags a_flags);
-	void UpdateEmittance() const;
+	void UpdateEmittance(RE::TESObjectCELL* a_cell) const;
 	void UpdateVanillaFlickering() const;
 
 	LightData           data{};
 	LightOutput         output{};
 	LightControllers    lightControllers{};
-	float               scale{ 1.0f };
 	std::optional<bool> lastVisibleState{};
 };
 
