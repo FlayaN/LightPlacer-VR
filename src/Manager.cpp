@@ -371,7 +371,11 @@ void LightManager::AttachLightsImpl(const SourceDataPtr& a_srcData, RE::FormID a
 		}
 	}
 
-	if (collectedPoints.empty() && collectedNodes.empty() || (!srcAttachData.root || !srcAttachData.attachNode)) {
+	if (collectedPoints.empty() && collectedNodes.empty()) {
+		return;
+	}
+
+	if (!srcAttachData.root || !srcAttachData.attachNode) {
 		return;
 	}
 
