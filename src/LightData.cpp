@@ -10,7 +10,7 @@ const RE::NiPointer<RE::NiPointLight>& LightOutput::GetLight() const
 
 bool LightOutput::DimLight(const float a_dimmer) const
 {
-	if (a_dimmer <= 1.0f) {
+	if (a_dimmer < 1.0f) {
 		niLight->fade *= a_dimmer;
 		return true;
 	}
@@ -38,6 +38,7 @@ void LightOutput::RemoveLight(bool a_clearData) const
 	if (bsLight) {
 		RE::BSShaderManager::State::GetSingleton().shadowSceneNode[0]->RemoveLight(bsLight);
 	}
+
 	if (a_clearData) {
 		if (niLight && niLight->parent) {
 			niLight->parent->DetachChild(niLight.get());
@@ -179,12 +180,20 @@ LIGHT_FLAGS LightData::GetLightFlags() const
 	if (GetInverseSquare()) {
 		lightFlags |= LIGHT_FLAGS::InverseSquare;
 	}
+	if (GetLinear()) {
+		lightFlags |= LIGHT_FLAGS::Linear;
+	}
 	return lightFlags.get();
 }
 
 bool LightData::GetInverseSquare() const
 {
 	return flags.any(LIGHT_FLAGS::InverseSquare) || light->data.flags.any(static_cast<RE::TES_LIGHT_FLAGS>(TES_LIGHT_FLAGS_EXT::kInverseSquare));
+}
+
+bool LightData::GetLinear() const
+{
+	return flags.any(LIGHT_FLAGS::Linear) || light->data.flags.any(static_cast<RE::TES_LIGHT_FLAGS>(TES_LIGHT_FLAGS_EXT::kLinear));
 }
 
 float LightData::GetCutoff() const
